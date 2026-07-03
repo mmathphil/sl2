@@ -167,6 +167,20 @@ function EditorCanvas({ proof }: { proof: any }) {
     });
   }, [setNodes, setEdges, saveToHistory]);
 
+  const onNodeTextEditingChange = useCallback((id: string, isEditing: boolean) => {
+    setNodes((nds) => nds.map((node) => {
+      if (node.id !== id) return node;
+      return {
+        ...node,
+        draggable: !isEditing,
+        data: {
+          ...node.data,
+          isTextEditing: isEditing,
+        },
+      };
+    }));
+  }, [setNodes]);
+
   // Copy and Paste
   const copyNodes = useCallback(() => {
     const selectedNodes = nodes.filter((node) => node.selected);
@@ -221,6 +235,7 @@ function EditorCanvas({ proof }: { proof: any }) {
           onLeftAnnotationChange: (val: string) => onNodeDataChange(newId, 'leftAnnotation', val),
           onRightAnnotationChange: (val: string) => onNodeDataChange(newId, 'rightAnnotation', val),
           onDelete: () => onDeleteNode(newId),
+          onEditingChange: (isEditing: boolean) => onNodeTextEditingChange(newId, isEditing),
         }
       };
     });
@@ -313,11 +328,13 @@ function EditorCanvas({ proof }: { proof: any }) {
             onLeftAnnotationChange: (val: string) => onNodeDataChange(node.id, 'leftAnnotation', val),
             onRightAnnotationChange: (val: string) => onNodeDataChange(node.id, 'rightAnnotation', val),
             onDelete: () => onDeleteNode(node.id),
+            onEditingChange: (isEditing: boolean) => onNodeTextEditingChange(node.id, isEditing),
           },
+          draggable: !Boolean(node.data?.isTextEditing),
         };
       })
     );
-  }, [onNodeDataChange, onDeleteNode, setNodes, edges]);
+  }, [onNodeDataChange, onDeleteNode, onNodeTextEditingChange, setNodes, edges]);
 
   const isValidConnection = useCallback((connection: Connection) => {
     // Prevent self-loops
@@ -376,6 +393,7 @@ function EditorCanvas({ proof }: { proof: any }) {
         x: -reactFlowInstance.getViewport().x + 100 + Math.random() * 50,
         y: -reactFlowInstance.getViewport().y + 100 + Math.random() * 50
       },
+      draggable: true,
       data: {
         expression: '',
         rule: '',
@@ -386,6 +404,7 @@ function EditorCanvas({ proof }: { proof: any }) {
         onLeftAnnotationChange: (val: string) => onNodeDataChange(id, 'leftAnnotation', val),
         onRightAnnotationChange: (val: string) => onNodeDataChange(id, 'rightAnnotation', val),
         onDelete: () => onDeleteNode(id),
+        onEditingChange: (isEditing: boolean) => onNodeTextEditingChange(id, isEditing),
       },
     };
     const nextNodes = nodes.concat(newNode);
@@ -403,6 +422,8 @@ function EditorCanvas({ proof }: { proof: any }) {
       toast({ variant: "destructive", title: "Export failed", description: error.message });
     }
   };
+
+  const isTextEditingActive = nodes.some((node) => Boolean((node.data as { isTextEditing?: boolean } | undefined)?.isTextEditing));
 
   return (
     <div className="h-screen w-full flex flex-col bg-background overflow-hidden">
@@ -446,7 +467,8 @@ function EditorCanvas({ proof }: { proof: any }) {
             onConnect={onConnect}
             isValidConnection={isValidConnection}
             nodeTypes={nodeTypes}
-            panOnDrag={true}
+            panOnDrag={!isTextEditingActive}
+            nodesDraggable={!isTextEditingActive}
             selectionOnDrag={false}
             selectionMode={SelectionMode.Partial}
             panOnScroll

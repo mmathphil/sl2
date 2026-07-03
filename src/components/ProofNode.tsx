@@ -1,7 +1,7 @@
 import { Handle, Position } from 'reactflow';
 import 'katex/dist/katex.min.css';
 import Latex from 'react-latex-next';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { Button } from './ui-components';
 
@@ -17,12 +17,17 @@ interface ProofNodeData {
   onRightAnnotationChange?: (val: string) => void;
   onRuleChange?: (val: string) => void;
   onDelete?: () => void;
+  onEditingChange?: (isEditing: boolean) => void;
 }
 
 export function ProofNode({ data, selected }: { data: ProofNodeData, selected?: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingLeft, setIsEditingLeft] = useState(false);
   const [isEditingRight, setIsEditingRight] = useState(false);
+
+  useEffect(() => {
+    data.onEditingChange?.(isEditing || isEditingLeft || isEditingRight);
+  }, [data.onEditingChange, isEditing, isEditingLeft, isEditingRight]);
 
   return (
     <div
